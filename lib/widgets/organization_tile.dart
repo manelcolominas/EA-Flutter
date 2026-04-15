@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/organization.dart';
+import '../screens/organization_detail_screen.dart';
 
 class OrganizationTile extends StatelessWidget {
   final Organization organization;
@@ -22,6 +23,15 @@ class OrganizationTile extends StatelessWidget {
         ),
         subtitle: Text('Usuarios registrados: ${organization.usuarios.length}'),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  OrganizationDetailScreen(organization: organization),
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,14 +1,18 @@
+import 'organization.dart';
+
 class Task {
   final String id;
   final String titulo;
   final DateTime fechaInicio;
   final DateTime fechaFin;
+  final List<OrganizationUser> usuarios;
 
   Task({
     required this.id,
     required this.titulo,
     required this.fechaInicio,
     required this.fechaFin,
+    required this.usuarios,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -21,6 +25,10 @@ class Task {
       titulo: titulo,
       fechaInicio: _parseDate(json['fechaInicio'] ?? json['fecha_inicio']),
       fechaFin: _parseDate(json['fechaFin'] ?? json['fecha_fin']),
+      usuarios: (json['usuarios'] as List<dynamic>?)
+              ?.map((dynamic u) => OrganizationUser.fromJson(u))
+              .toList() ??
+          [],
     );
   }
 

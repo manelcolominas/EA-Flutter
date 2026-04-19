@@ -183,53 +183,59 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       context: context,
       isScrollControlled: true,
       builder: (BuildContext context) {
-        return SafeArea(
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.6,
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                const Text(
-                  'Selecciona usuarios',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: widget.usuarios.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final OrganizationUser user = widget.usuarios[index];
-
-                      return CheckboxListTile(
-                        value: _selectedUsuarioIds.contains(user.id),
-                        onChanged: (bool? checked) {
-                          setState(() {
-                            if (checked == true) {
-                              _selectedUsuarioIds.add(user.id);
-                            } else {
-                              _selectedUsuarioIds.remove(user.id);
-                            }
-                          });
-                        },
-                        title: Text(user.name),
-                        controlAffinity: ListTileControlAffinity.leading,
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Listo'),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Selecciona usuarios',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: widget.usuarios.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final OrganizationUser user = widget.usuarios[index];
+
+                          return CheckboxListTile(
+                            value: _selectedUsuarioIds.contains(user.id),
+                            onChanged: (bool? checked) {
+                              setModalState(() {
+                                if (checked == true) {
+                                  _selectedUsuarioIds.add(user.id);
+                                } else {
+                                  _selectedUsuarioIds.remove(user.id);
+                                }
+                              });
+                              // Update parent state so the main screen reflects changes
+                              setState(() {});
+                            },
+                            title: Text(user.name),
+                            controlAffinity: ListTileControlAffinity.leading,
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Listo'),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -324,16 +330,35 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                                 child: InputDecorator(
                                   decoration:
                                       _buildInputDecoration(
-                                        label: '',
+                                        label: 'Usuarios asignados',
                                         hint: 'Selecciona usuarios',
                                         icon: Icons.group,
                                       ).copyWith(
-                                        labelText: null,
+                                        labelText: 'Usuarios asignados',
                                         suffixIcon: const Icon(
                                           Icons.arrow_drop_down,
                                         ),
                                       ),
-                                  child: const Text('Pulsa para seleccionar'),
+                                  child: Text(
+                                    _selectedUsuarioIds.isEmpty
+                                        ? 'Pulsa para seleccionar'
+                                        : widget.usuarios
+                                            .where(
+                                              (u) => _selectedUsuarioIds.contains(
+                                                u.id,
+                                              ),
+                                            )
+                                            .map((u) => u.name)
+                                            .join(', '),
+                                    style: TextStyle(
+                                      color:
+                                          _selectedUsuarioIds.isEmpty
+                                              ? Colors.grey[600]
+                                              : Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ],

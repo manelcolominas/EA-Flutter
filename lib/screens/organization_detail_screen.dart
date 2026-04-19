@@ -3,6 +3,7 @@ import '../models/organization.dart';
 import '../models/task.dart';
 import '../services/organization_service.dart';
 import 'create_task_screen.dart';
+import 'task_detail_screen.dart';
 
 class OrganizationDetailScreen extends StatefulWidget {
   final Organization organization;
@@ -170,6 +171,13 @@ class _OrganizationDetailScreenState extends State<OrganizationDetailScreen> {
                                     vertical: 8,
                                   ),
                                   child: ListTile(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => TaskDetailScreen(task: task),
+                                        ),
+                                      );
+                                    },
                                     leading: const Icon(Icons.task_alt),
                                     title: Text(
                                       task.titulo,

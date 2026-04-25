@@ -3,29 +3,58 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Fetch full user data (including populated organization) when profile opens.
+    Future.microtask(() {
+      if (!mounted) return;
+      context.read<AuthProvider>().loadProfileFromApi();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().currentUser;
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+    final isLoading = authProvider.isLoading;
+    final errorMessage = authProvider.errorMessage;
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Perfil')),
-        body: const Center(child: Text('Error: No se encontró la sesión del usuario')),
+        appBar: AppBar(title: const Text('Profile')),
+        body: const Center(child: Text('Error: User session not found')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Perfil'),
+        title: const Text('My Profile'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            if (isLoading) const LinearProgressIndicator(),
+            if (errorMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 10),
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             const SizedBox(height: 20),
             const CircleAvatar(
               radius: 60,
@@ -44,25 +73,35 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.person_outline),
-                      title: const Text('Nombre'),
-                      subtitle: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: const Text('Name'),
+                      subtitle: Text(
+                        user.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                     const Divider(),
                     ListTile(
                       leading: const Icon(Icons.email_outlined),
-                      title: const Text('Correo electrónico'),
-                      subtitle: Text(user.email, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: const Text('Email'),
+                      subtitle: Text(
+                        user.email,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                     const Divider(),
                     ListTile(
                       leading: const Icon(Icons.business),
-                      title: const Text('ID Organización'),
-                      subtitle: Text(user.organizacion ?? 'Sin organización asignada', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: const Text('Organization'),
+                      subtitle: Text(
+                        user.organization?.name ?? 'No Organization',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 16),
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -76,15 +115,12 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.logout),
-                label: const Text('Cerrar sesión', style: TextStyle(fontSize: 16)),
+                label: const Text('Log out', style: TextStyle(fontSize: 16)),
                 onPressed: () {
-                  // Limpiamos la sesión usando el Provider
                   context.read<AuthProvider>().logout();
-                  
-                  // Rompemos el historial en el navegador raíz para asegurar salir del wrapper completamente
                   Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
+                        (route) => false,
                   );
                 },
               ),

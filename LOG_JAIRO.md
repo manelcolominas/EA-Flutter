@@ -2,9 +2,9 @@
 
 ## 1) Objetivo funcional alcanzado
 
-1. Usuario entra en detalle de organizacion.
-2. App hace GET de tareas de esa organizacion.
-3. Usuario pulsa "Crear tarea".
+1. Usuario entra en detalle de organization.
+2. App hace GET de tasks de esa organization.
+3. Usuario pulsa "Create task".
 4. App abre formulario, valida datos y hace POST.
 5. Al volver, la pantalla de detalle lanza de nuevo el GET y refresca lista.
 
@@ -16,8 +16,8 @@
 
 Que aporta:
 
-- Modelo `Task` independiente (ya no depende de que organizacion traiga tareas embebidas).
-- Campos: `id`, `titulo`, `fechaInicio`, `fechaFin`.
+- Modelo `Task` independiente (ya no depende de que organization traiga tasks embebidas).
+- Campos: `id`, `titulo`, `fechaStart`, `fechaend`.
 - `Task.fromJson(...)` para parsear respuestas de API.
 
 ## 3) Ficheros actualizados y carpeta
@@ -28,16 +28,16 @@ Que aporta:
 
 Cambios clave:
 
-- Metodo `fetchTasksByOrganization(String organizacionId)`:
-	- GET `/organizaciones/{organizacionId}/tareas`
+- Metodo `fetchTasksByOrganization(String organizationId)`:
+	- GET `/organizations/{organizationId}/tasks`
 	- Retorna `Future<List<Task>>`.
 - Metodo `createTaskByOrganization(...)`:
-	- POST `/organizaciones/{organizacionId}/tareas`
+	- POST `/organizations/{organizationId}/tasks`
 	- Body JSON enviado:
 		- `titulo`
-		- `fechaInicio` (ISO UTC)
-		- `fechaFin` (ISO UTC)
-		- `usuarios` (lista de IDs)
+		- `fechaStart` (ISO UTC)
+		- `fechaend` (ISO UTC)
+		- `users` (lista de IDs)
 
 ### Actualizado en pantallas
 
@@ -45,15 +45,15 @@ Cambios clave:
 
 Cambios clave:
 
-- Eliminada lista mock local de tareas.
-- Integrado `FutureBuilder<List<Task>>` para cargar tareas reales.
+- Eliminada lista mock local de tasks.
+- Integrado `FutureBuilder<List<Task>>` para cargar tasks reales.
 - Estados de UI gestionados:
 	- Cargando: `CircularProgressIndicator`.
-	- Sin datos: "Aun no hay tareas en esta organizacion".
+	- Sin datos: "Aun no hay tasks en esta organization".
 	- Con datos: `ListView.builder` + `Card` para cada tarea.
-- Navegacion a crear tarea ahora pasa:
-	- `organizacionId`
-	- `usuarios`
+- Navegacion a Create task ahora pasa:
+	- `organizationId`
+	- `users`
 - Al volver de formulario:
 	- Si se creo tarea (`Navigator.pop(..., true)`), se recarga GET.
 
@@ -64,9 +64,9 @@ Cambios clave:
 - Sigue siendo `StatefulWidget` con `Form` y `GlobalKey<FormState>`.
 - Validaciones locales:
 	- Titulo obligatorio.
-	- Fecha inicio obligatoria.
-	- Fecha fin obligatoria.
-	- Fecha fin >= fecha inicio.
+	- Fecha Start obligatoria.
+	- Fecha end obligatoria.
+	- Fecha end >= fecha Start.
 - Uso de `TextEditingController` para titulo e inputs de fecha.
 - Integracion con backend:
 	- En submit valida formulario.
@@ -78,7 +78,7 @@ Cambios clave:
 
 ### Gestion de UI reactiva
 
-- `StatefulWidget`: necesario para manejar estado local (fechas, loading, future de tareas).
+- `StatefulWidget`: necesario para manejar estado local (fechas, loading, future de tasks).
 - `setState`: usado para refrescar UI tras cambios de estado.
 
 ### Formularios y validacion

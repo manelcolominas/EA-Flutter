@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/organization.dart';
+import '../models/task.dart';
+import '../providers/auth_provider.dart';
 import '../services/organization_service.dart';
 
 class CreateTaskScreen extends StatefulWidget {
-  final String organizacionId;
-  final List<OrganizationUser> usuarios;
+  final String organizationId;
+  final List<OrganizationUser> users;
+  final Task? taskToEdit;
 
   const CreateTaskScreen({
     super.key,
-    required this.organizacionId,
-    required this.usuarios,
+    required this.organizationId,
+    required this.users,
+    this.taskToEdit,
   });
 
   @override
@@ -21,26 +26,37 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   final OrganizationService _organizationService = OrganizationService();
 
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
 
   DateTime? _startDate;
   DateTime? _endDate;
-  late final Set<String> _selectedUsuarioIds;
+  late Set<String> _selectedUserIds;
+  String _selectedStatus = 'TO DO';
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    // Start with all organization users selected by default to preserve current behavior.
-    _selectedUsuarioIds = widget.usuarios
-        .map((OrganizationUser user) => user.id)
-        .toSet();
+    if (widget.taskToEdit != null) {
+      _titleController.text = widget.taskToEdit!.title;
+      _descriptionController.text = widget.taskToEdit!.description;
+      _startDate = widget.taskToEdit!.startDate;
+      _endDate = widget.taskToEdit!.endDate;
+      _startDateController.text = _formatDate(_startDate!);
+      _endDateController.text = _formatDate(_endDate!);
+      _selectedUserIds = widget.taskToEdit!.users.map((u) => u.id).toSet();
+      _selectedStatus = widget.taskToEdit!.state;
+    } else {
+      _selectedUserIds = widget.users.map((OrganizationUser user) => user.id).toSet();
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _descriptionController.dispose();
     _startDateController.dispose();
     _endDateController.dispose();
     super.dispose();
@@ -74,7 +90,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       initialDate: _startDate ?? now,
       firstDate: DateTime(now.year - 10),
       lastDate: DateTime(now.year + 10),
-      helpText: 'Selecciona fecha de inicio',
+      helpText: 'Select start date',
     );
 
     if (pickedDate == null) {
@@ -85,7 +101,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       _startDate = DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
       _startDateController.text = _formatDate(_startDate!);
 
-      // If start date moves forward, clear end date if it becomes invalid.
       if (_endDate != null && _endDate!.isBefore(_startDate!)) {
         _endDate = null;
         _endDateController.clear();
@@ -104,7 +119,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       initialDate: initialDate,
       firstDate: _startDate ?? DateTime(now.year - 10),
       lastDate: DateTime(now.year + 10),
-      helpText: 'Selecciona fecha de fin',
+      helpText: 'Select end date',
     );
 
     if (pickedDate == null) {
@@ -132,9 +147,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       return;
     }
 
-    if (_selectedUsuarioIds.isEmpty) {
+    if (_selectedUserIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona al menos un usuario')),
+        const SnackBar(content: Text('Select at least one user')),
       );
       return;
     }
@@ -144,27 +159,39 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     });
 
     try {
-      await _organizationService.createTaskByOrganization(
-        organizacionId: widget.organizacionId,
-        titulo: _titleController.text.trim(),
-        fechaInicio: _normalizeStartDate(_startDate!),
-        fechaFin: _normalizeEndDate(_endDate!),
-        usuarios: _selectedUsuarioIds.toList(),
-      );
+      final String? token = context.read<AuthProvider>().accessToken;
 
-      print('Formulario válido. Datos listos para la Fase 4');
-
-      if (!mounted) {
-        return;
+      if (widget.taskToEdit != null) {
+        await _organizationService.editTask(
+          taskId: widget.taskToEdit!.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          state: _selectedStatus,
+          startDate: _normalizeStartDate(_startDate!),
+          endDate: _normalizeEndDate(_endDate!),
+          users: _selectedUserIds.toList(),
+          accessToken: token,
+        );
+      } else {
+        await _organizationService.createTask(
+          organizationId: widget.organizationId,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          state: _selectedStatus,
+          startDate: _normalizeStartDate(_startDate!),
+          endDate: _normalizeEndDate(_endDate!),
+          users: _selectedUserIds.toList(),
+          accessToken: token,
+        );
       }
+
+      if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('No se pudo crear la tarea: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -175,9 +202,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   }
 
   Future<void> _openUserSelector() async {
-    if (widget.usuarios.isEmpty) {
-      return;
-    }
+    if (widget.users.isEmpty) return;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -192,27 +217,25 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                   children: [
                     const SizedBox(height: 12),
                     const Text(
-                      'Selecciona usuarios',
+                      'Select users',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: widget.usuarios.length,
+                        itemCount: widget.users.length,
                         itemBuilder: (BuildContext context, int index) {
-                          final OrganizationUser user = widget.usuarios[index];
-
+                          final OrganizationUser user = widget.users[index];
                           return CheckboxListTile(
-                            value: _selectedUsuarioIds.contains(user.id),
+                            value: _selectedUserIds.contains(user.id),
                             onChanged: (bool? checked) {
                               setModalState(() {
                                 if (checked == true) {
-                                  _selectedUsuarioIds.add(user.id);
+                                  _selectedUserIds.add(user.id);
                                 } else {
-                                  _selectedUsuarioIds.remove(user.id);
+                                  _selectedUserIds.remove(user.id);
                                 }
                               });
-                              // Update parent state so the main screen reflects changes
                               setState(() {});
                             },
                             title: Text(user.name),
@@ -227,7 +250,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Listo'),
+                          child: const Text('Done'),
                         ),
                       ),
                     ),
@@ -244,7 +267,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nueva Tarea')),
+      appBar: AppBar(
+        title: Text(widget.taskToEdit != null ? 'Edit Task' : 'New Task'),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -260,16 +285,43 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                         TextFormField(
                           controller: _titleController,
                           decoration: _buildInputDecoration(
-                            label: 'Título',
-                            hint: 'Escribe el título de la tarea',
+                            label: 'Title',
+                            hint: 'Enter task title',
                             icon: Icons.title,
                           ),
-                          textInputAction: TextInputAction.next,
-                          validator: (String? value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'El título es obligatorio';
+                          validator: (value) =>
+                              (value == null || value.trim().isEmpty) ? 'Title is required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _descriptionController,
+                          decoration: _buildInputDecoration(
+                            label: 'Description',
+                            hint: 'Enter task description',
+                            icon: Icons.description,
+                          ),
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _selectedStatus,
+                          decoration: _buildInputDecoration(
+                            label: 'Status',
+                            hint: 'Select status',
+                            icon: Icons.info_outline,
+                          ),
+                          items: ['TO DO', 'IN PROGRESS', 'DONE']
+                              .map((status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(status),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedStatus = value;
+                              });
                             }
-                            return null;
                           },
                         ),
                         const SizedBox(height: 16),
@@ -277,92 +329,52 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                           controller: _startDateController,
                           readOnly: true,
                           onTap: _pickStartDate,
-                          decoration:
-                              _buildInputDecoration(
-                                label: 'Fecha de inicio',
-                                hint: 'Selecciona una fecha',
-                                icon: Icons.event,
-                              ).copyWith(
-                                suffixIcon: const Icon(Icons.calendar_today),
-                              ),
-                          validator: (String? value) {
-                            if (_startDate == null) {
-                              return 'La fecha de inicio es obligatoria';
-                            }
-                            return null;
-                          },
+                          decoration: _buildInputDecoration(
+                            label: 'Start Date',
+                            hint: 'Select a date',
+                            icon: Icons.event,
+                          ).copyWith(suffixIcon: const Icon(Icons.calendar_today)),
+                          validator: (value) => _startDate == null ? 'Start date is required' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _endDateController,
                           readOnly: true,
                           onTap: _pickEndDate,
-                          decoration:
-                              _buildInputDecoration(
-                                label: 'Fecha de fin',
-                                hint: 'Selecciona una fecha',
-                                icon: Icons.event_available,
-                              ).copyWith(
-                                suffixIcon: const Icon(Icons.calendar_today),
-                              ),
-                          validator: (String? value) {
-                            if (_endDate == null) {
-                              return 'La fecha de fin es obligatoria';
-                            }
-                            if (_startDate != null &&
-                                _endDate!.isBefore(_startDate!)) {
-                              return 'La fecha de fin no puede ser anterior a la fecha de inicio';
+                          decoration: _buildInputDecoration(
+                            label: 'End Date',
+                            hint: 'Select a date',
+                            icon: Icons.event_available,
+                          ).copyWith(suffixIcon: const Icon(Icons.calendar_today)),
+                          validator: (value) {
+                            if (_endDate == null) return 'End date is required';
+                            if (_startDate != null && _endDate!.isBefore(_startDate!)) {
+                              return 'End date cannot be before start date';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 20),
-                        if (widget.usuarios.isEmpty)
-                          const Text(
-                            'Esta organización no tiene usuarios para asignar.',
-                          )
-                        else
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              InkWell(
-                                onTap: _openUserSelector,
-                                child: InputDecorator(
-                                  decoration:
-                                      _buildInputDecoration(
-                                        label: 'Usuarios asignados',
-                                        hint: 'Selecciona usuarios',
-                                        icon: Icons.group,
-                                      ).copyWith(
-                                        labelText: 'Usuarios asignados',
-                                        suffixIcon: const Icon(
-                                          Icons.arrow_drop_down,
-                                        ),
-                                      ),
-                                  child: Text(
-                                    _selectedUsuarioIds.isEmpty
-                                        ? 'Pulsa para seleccionar'
-                                        : widget.usuarios
-                                            .where(
-                                              (u) => _selectedUsuarioIds.contains(
-                                                u.id,
-                                              ),
-                                            )
-                                            .map((u) => u.name)
-                                            .join(', '),
-                                    style: TextStyle(
-                                      color:
-                                          _selectedUsuarioIds.isEmpty
-                                              ? Colors.grey[600]
-                                              : Colors.black87,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        InkWell(
+                          onTap: _openUserSelector,
+                          child: InputDecorator(
+                            decoration: _buildInputDecoration(
+                              label: 'Assigned users',
+                              hint: 'Select users',
+                              icon: Icons.group,
+                            ).copyWith(suffixIcon: const Icon(Icons.arrow_drop_down)),
+                            child: Text(
+                              _selectedUserIds.isEmpty
+                                  ? 'Tap to select'
+                                  : widget.users
+                                      .where((u) => _selectedUserIds.contains(u.id))
+                                      .map((u) => u.name)
+                                      .join(', '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -373,16 +385,13 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                  ),
                   child: _isSubmitting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Crear'),
+                      : Text(widget.taskToEdit != null ? 'Update' : 'Create'),
                 ),
               ),
             ],

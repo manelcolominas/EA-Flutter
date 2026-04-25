@@ -21,7 +21,7 @@ class OrganizationTile extends StatelessWidget {
           organization.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('Usuarios registrados: ${organization.usuarios.length}'),
+        subtitle: Text('Registered users : ${organization.users.length}'),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
           Navigator.push(

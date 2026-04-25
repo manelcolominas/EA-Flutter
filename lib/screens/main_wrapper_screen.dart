@@ -12,7 +12,7 @@ class MainWrapperScreen extends StatefulWidget {
 class _MainWrapperScreenState extends State<MainWrapperScreen> {
   int _currentIndex = 0;
 
-  // Claves globales para los navegadores independientes de cada pestaña
+  // Global keys for independent navigators for each tab
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
@@ -24,13 +24,13 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-        
-        // Si hay historial en la pestaña actual, retrocederemos en ella
+
+        // If there is history in the current tab, we will go back in it
         final isFirstRouteInCurrentTab =
-            !await _navigatorKeys[_currentIndex].currentState!.maybePop();
+        !await _navigatorKeys[_currentIndex].currentState!.maybePop();
 
         if (isFirstRouteInCurrentTab) {
-          // Si estamos en la raíz y no es la primera pestaña, volver a la primera
+          // If we are at the root and it's not the first tab, go back to the first one
           if (_currentIndex != 0) {
             setState(() {
               _currentIndex = 0;
@@ -50,7 +50,7 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
           currentIndex: _currentIndex,
           onTap: (index) {
             if (index == _currentIndex) {
-              // Si tocamos la pestaña en la que ya estamos, volvemos a la raíz de esa pestaña
+              // If we tap the tab we are already on, we return to the root of that tab
               _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
             } else {
               setState(() {
@@ -61,11 +61,11 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: 'Inicio',
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),
-              label: 'Perfil',
+              label: 'Profile',
             ),
           ],
         ),
@@ -73,7 +73,7 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
     );
   }
 
-  // Construye un navegador independiente para cada pestaña
+  // Builds an independent navigator for each tab
   Widget _buildOffstageNavigator(int index, Widget rootWidget) {
     return Offstage(
       offstage: _currentIndex != index,

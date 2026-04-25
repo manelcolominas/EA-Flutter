@@ -20,20 +20,18 @@ class OrganizationUser {
 class Organization {
   final String id;
   final String name;
-  final List<OrganizationUser> usuarios;
+  final List<OrganizationUser> users;
 
-  Organization({required this.id, required this.name, required this.usuarios});
+  Organization({required this.id, required this.name, required this.users});
 
-  // Esto es un constructor que permite crear el json
   factory Organization.fromJson(Map<String, dynamic> json) {
     return Organization(
       id: json['_id'] ?? '',
-      name: json['name'] ?? 'Sin nombre',
-
-      usuarios:
-          (json['usuarios'] as List<dynamic>?)
-              ?.map((dynamic user) => OrganizationUser.fromJson(user))
-              .toList() ??
+      name: json['name'] ?? '',
+      users:
+      (json['users'] as List<dynamic>?)
+          ?.map((dynamic user) => OrganizationUser.fromJson(user))
+          .toList() ??
           [],
     );
   }

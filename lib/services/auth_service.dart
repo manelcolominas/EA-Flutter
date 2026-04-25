@@ -20,18 +20,18 @@ class AuthService {
         return json.decode(response.body);
       } else {
         final body = json.decode(response.body);
-        throw Exception(body['message'] ?? 'Error de autenticación');
+        throw Exception(body['message'] ?? 'Authentication error');
       }
     } catch (e) {
-      throw Exception('Error al conectar con el servidor: $e');
+      throw Exception('Error connecting to the server: $e');
     }
   }
 
-  Future<Map<String, dynamic>> register(
-      String name, String email, String password, String organizacionId) async {
+  Future<Map<String, dynamic>> signup(
+      String name, String email, String password, String organizationId) async {
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.baseUrl}/auth/register'),
+        Uri.parse('${AppConstants.baseUrl}/auth/signup'),
         headers: <String, String>{
           'Content-Type': 'application/json',
         },
@@ -39,7 +39,7 @@ class AuthService {
           'name': name,
           'email': email,
           'password': password,
-          'organizacion': organizacionId,
+          'organization': organizationId,
         }),
       );
 
@@ -47,10 +47,31 @@ class AuthService {
         return json.decode(response.body);
       } else {
         final body = json.decode(response.body);
-        throw Exception(body['message'] ?? 'Error al registrar usuario');
+        throw Exception(body['message'] ?? 'Error registering user');
       }
     } catch (e) {
-      throw Exception('Error al conectar con el servidor: $e');
+      throw Exception('Error connecting to the server: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchUserById(String userId, String accessToken) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.baseUrl}/users/$userId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final body = json.decode(response.body);
+        throw Exception(body['message'] ?? 'Error getting user');
+      }
+    } catch (e) {
+      throw Exception('Error connecting to the server: $e');
     }
   }
 }

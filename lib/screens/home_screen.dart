@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/organization.dart';
 import '../services/organization_service.dart';
 import '../widgets/organization_tile.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,18 +27,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadOrganizations() async {
     try {
-      final orgs = await _service.getOrganizations();
+      final token = context.read<AuthProvider>().accessToken;
+      final orgs = await _service.getOrganizations(accessToken: token);
+
+      if (!mounted) return;
+
       setState(() {
         _organizations = orgs;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (_organizations.isEmpty) {
-      return const Center(child: Text('No hay organizaciones disponibles'));
+      return const Center(child: Text('No organizations available'));
     }
 
     return ListView.builder(

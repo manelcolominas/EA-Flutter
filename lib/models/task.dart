@@ -2,32 +2,37 @@ import 'organization.dart';
 
 class Task {
   final String id;
-  final String titulo;
-  final DateTime fechaInicio;
-  final DateTime fechaFin;
-  final List<OrganizationUser> usuarios;
+  final String title;
+  final String description;
+  final String state;
+  final DateTime startDate;
+  final DateTime endDate;
+  final List<OrganizationUser> users;
 
   Task({
     required this.id,
-    required this.titulo,
-    required this.fechaInicio,
-    required this.fechaFin,
-    required this.usuarios,
+    required this.title,
+    required this.description,
+    required this.state,
+    required this.startDate,
+    required this.endDate,
+    required this.users,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
     final String id = (json['_id'] ?? json['id'] ?? '').toString();
-    final String titulo =
-        (json['titulo'] ?? json['title'] ?? 'Sin título').toString();
+    final String title = (json['title'] ?? '').toString();
 
     return Task(
       id: id,
-      titulo: titulo,
-      fechaInicio: _parseDate(json['fechaInicio'] ?? json['fecha_inicio']),
-      fechaFin: _parseDate(json['fechaFin'] ?? json['fecha_fin']),
-      usuarios: (json['usuarios'] as List<dynamic>?)
-              ?.map((dynamic u) => OrganizationUser.fromJson(u))
-              .toList() ??
+      title: title,
+      description: (json['description'] ?? '').toString(),
+      state: (json['state'] ?? 'TO DO').toString(),
+      startDate: _parseDate(json['startDate']),
+      endDate: _parseDate(json['endDate']),
+      users: (json['users'] as List<dynamic>?)
+          ?.map((dynamic u) => OrganizationUser.fromJson(u))
+          .toList() ??
           [],
     );
   }
@@ -38,7 +43,9 @@ class Task {
       if (parsed != null) {
         return parsed;
       }
+    } else if (value is DateTime) {
+      return value;
     }
-    throw FormatException('Fecha inválida en Task: $value');
+    throw FormatException('Invalid date in Task: $value');
   }
 }

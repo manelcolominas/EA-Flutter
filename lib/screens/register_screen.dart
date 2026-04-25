@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error al cargar organizaciones';
+        _errorMessage = 'Error loading organizations';
         _isLoadingOrgs = false;
       });
     }
@@ -53,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _passwordController.text.trim().isEmpty ||
         _selectedOrganizationId == null) {
       setState(() {
-        _errorMessage = 'Por favor, completa todos los campos';
+        _errorMessage = 'Please complete all fields';
       });
       return;
     }
@@ -64,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await _authService.register(
+      await _authService.signup(
         _nameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text.trim(),
@@ -73,10 +73,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      // Volver a la pantalla de login con mensaje de éxito
+      // Return to login screen with success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Registro exitoso. Ahora puedes iniciar sesión.'),
+          content: Text('Registration successful. You can now log in.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -98,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registrarse'),
+        title: const Text('Register'),
         centerTitle: true,
       ),
       body: Center(
@@ -121,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Crea tu cuenta',
+                    'Create your account',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Nombre',
+                      labelText: 'Name',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.person),
                     ),
@@ -140,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: 'Correo Electrónico',
+                      labelText: 'Email',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.email),
                     ),
@@ -150,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: 'Contraseña',
+                      labelText: 'Password',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.lock),
                     ),
@@ -161,7 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : DropdownButtonFormField<String>(
                           value: _selectedOrganizationId,
                           decoration: const InputDecoration(
-                            labelText: 'Organización',
+                            labelText: 'Organization',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.business),
                           ),
@@ -204,7 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text(
-                              'Registrarse',
+                              'Register',
                               style: TextStyle(fontSize: 16),
                             ),
                     ),
